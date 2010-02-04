@@ -1,0 +1,15 @@
+{
+  "name": "Site Search",
+  "version": "1.0",
+  "description": "Search all pages of any site, even if no search is provided by the site.",
+  "browser_action": {
+    "default_title": "Site Search",
+    "default_icon": "images/icon48.png",
+    "popup": "popup.html"
+  },
+  "permissions": ["tabs","http://api.search.live.net/"],
+  "icons": {
+      "48" : "images/icon48.png",
+      "128" : "images/icon128.png"
+  }
+}

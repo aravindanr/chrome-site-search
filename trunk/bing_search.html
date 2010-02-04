@@ -1,0 +1,132 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+        <style type="text/css">
+        cite {
+            font-style: normal;
+            color: green;
+        }
+
+        h3 {
+            margin: 0;
+            font-weight: normal;
+            font-size: medium;
+        }
+
+        li {
+            margin: 1em 0;
+            list-style: none;
+        }
+
+        #ssb {
+            margin: 0 8px 11px;
+            padding: 0.1em;
+            background: none repeat scroll 0 0 #F0F7F9;
+        }
+
+        #ssb p {
+            margin: 0.1em 0;
+            padding: 0.2em;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        #ssb div {
+            float: left;
+            padding: 4px 0.5em 0 7px;
+        }
+            em {
+            font-weight: bold;
+            font-style: normal;
+        }
+    </style>    
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.8.0r4/build/fonts/fonts-min.css" /> 
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.8.0r4/build/paginator/assets/skins/sam/paginator.css" />
+<script type="text/javascript" src="http://yui.yahooapis.com/2.8.0r4/build/yahoo-dom-event/yahoo-dom-event.js"></script>
+<script type="text/javascript" src="http://yui.yahooapis.com/2.8.0r4/build/element/element-min.js"></script>
+<script type="text/javascript" src="http://yui.yahooapis.com/2.8.0r4/build/paginator/paginator-min.js"></script>
+<script type="text/javascript" src="http://yui.yahooapis.com/2.8.0r4/build/json/json-min.js"></script>
+<script type="text/javascript" src="http://yui.yahooapis.com/2.8.0r4/build/get/get-min.js"></script>
+<script type="text/javascript" src="http://yui.yahooapis.com/2.8.0r4/build/datasource/datasource-min.js"></script>
+</head>
+<body class="yui-skin-sam" style="width: 500px;">
+<input type="text" id="q" size="41" maxlength="2048" style="font-size: 17px;">&nbsp; <input type="button" onclick="bing();" value="Search">
+  <br>
+  <span id="domainName">domain.com</span>    
+<div id="ssb">
+        <div>
+            <div id="paging"></div>
+        </div>
+        <p>
+         Results <span id="startIndex">1</span> - <span id="endIndex">10</span> of about <span id="total"></span>
+        </p>
+    </div>
+    <div id="pageNum"></div>
+</body>
+<script type="text/javascript">
+var serviceUrl = "http://api.search.live.net/json.aspx?Appid=719CF822A04CC49B98942128E67F6FFADA62645C&query=audio&sources=web&JsonType=callback&web.count=10";
+
+// Set up the application under the YAHOO.example namespace
+var Ex = YAHOO.namespace('example');
+
+YAHOO.util.Event.onDOMReady(function () {
+
+Ex.handlePagination = function (state,param) {
+
+    // DataSource for a remote location with dynamic script nodes
+    var url = serviceUrl + "&JsonCallback=searchDone&web.offset=" + state.recordOffset;    
+    alert(param);
+    var dsScriptNode = new YAHOO.util.ScriptNodeDataSource(url);         
+    dsScriptNode.sendRequest("",null);
+
+    document.getElementById("startIndex").innerHTML = state.records[0] + 1;
+    document.getElementById("endIndex").innerHTML = state.records[1] + 1;
+
+    // Update the Paginator's state, confirming change
+    Ex.paginator.setState(state);
+};
+
+var dsScriptNode = new YAHOO.util.ScriptNodeDataSource(serviceUrl + "&JsonCallback=createResultSet");
+dsScriptNode.sendRequest("",null);
+});
+
+function createResultSet(data) {
+    // Create the Paginator widget and subscribe to its changeRequest event
+    Ex.paginator = new YAHOO.widget.Paginator({
+        rowsPerPage : 10,
+        totalRecords : data.SearchResponse.Web.Total,
+        containers : 'paging',
+        template : '{PreviousPageLink}{PageLinks}{NextPageLink}&nbsp;&nbsp;Page <em>{CurrentPageReport}</em>'
+    });
+
+    Ex.paginator.subscribe('changeRequest', Ex.handlePagination, "hello");
+
+    // Render the Paginator into the configured container(s)
+    Ex.paginator.render();
+
+    document.getElementById("total").innerHTML = data.SearchResponse.Web.Total;
+
+    searchDone(data);
+}
+
+function searchDone(data) {
+  Ex.paginator.set("totalRecords", data.SearchResponse.Web.Total);
+    
+  var str = "<ul>";
+  for(var index=0; index < data.SearchResponse.Web.Results.length; index++) {
+    var result = data.SearchResponse.Web.Results[index];
+    str += '<li><h3><a href="javascript:openTab(\'' +  result.Url + '\')">' + result.Title.replace(/audio/gi, '<em>$&</em>') + '</a></h3>';
+    str += '<div>';
+    str += result.Description.replace(/audio/gi,'<em>$&</em>');
+    str += '<br><cite>';
+    str += result.DisplayUrl;
+    str += "</cite></div></li>"
+  }
+  str += "</ul>"
+
+  // Show the appropriate content for the requested page
+  YAHOO.util.Dom.get('pageNum').innerHTML = str;    
+}
+</script>
+</html>

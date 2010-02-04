@@ -1,0 +1,137 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Site Search</title>
+    <link rel="stylesheet" type="text/css" href="lib/fonts-min.css"/>
+    <link rel="stylesheet" type="text/css" href="lib/paginator.css"/>
+    <link href="lib/site-search.css" rel="stylesheet" type="text/css"/>
+
+    <script type="text/javascript" src="lib/yahoo-dom-event.js"></script>
+    <script type="text/javascript" src="lib/element-min.js"></script>
+    <script type="text/javascript" src="lib/paginator-min.js"></script>
+    <script type="text/javascript" src="lib/json-min.js"></script>
+    <script type="text/javascript" src="lib/connection-min.js"></script>
+    <script type="text/javascript">
+        var HTTP = "http://";
+        var HTTPS = "https://";
+        var ROWS_PER_PAGE = 10;
+        var SERVICE_URL = "http://api.search.live.net/json.aspx?Appid=719CF822A04CC49B98942128E67F6FFADA62645C&sources=web&web.count=10";
+
+        // Set up the application under the YAHOO.sitesearch namespace
+        var Ss = YAHOO.namespace('sitesearch');
+
+        var D = YAHOO.util.Dom;
+
+        Ss.isValid = function (url) {
+            return url.indexOf(HTTP) != -1 || url.indexOf(HTTPS) != -1;
+        };
+
+        chrome.tabs.getSelected(null, function(tab) {
+            Ss.selectedTabUrl = tab.url;
+            Ss.selectedTabId = tab.id;
+            if (Ss.isValid(tab.url)) {
+                var noProtocol = tab.url.replace(HTTP, "").replace(HTTPS, "");
+                Ss.domainName = noProtocol.substring(0, noProtocol.indexOf('/'));
+                D.get('domainName').innerHTML = Ss.domainName;
+                D.get('q').focus();
+            } else {
+                D.get('results').innerHTML = '<strong>Site Not Searchable</strong>';
+            }
+        });
+
+        Ss.handlePagination = function (state) {            
+            var url = SERVICE_URL + "&web.offset=" + state.recordOffset + "&query=site:" + Ss.domainName + " " + Ss.textToSearch;
+
+            YAHOO.util.Connect.asyncRequest('GET', url, Ss.callback);
+
+            // Update the Paginator's state, confirming change
+            Ss.paginator.setState(state);
+        };
+
+        Ss.callback = {
+            success : function(o) {
+                var data = YAHOO.lang.JSON.parse(o.responseText);
+                // handle empty resultset
+                if (!data.SearchResponse.Web.Total || data.SearchResponse.Web.Total == 0) {
+                    D.get('results').innerHTML = '<br><strong>Search produced no results</strong>';
+                    Ss.paginator = null;
+                    D.get('pageNum').innerHTML = '';
+                    D.get('info').style.display = 'none';
+                    return;
+                }
+
+                if (!Ss.paginator) {
+                    // Create the Paginator widget and subscribe to its changeRequest event                    
+                    Ss.paginator = new YAHOO.widget.Paginator({
+                        rowsPerPage : ROWS_PER_PAGE,
+                        containers : 'pageNum',
+                        totalRecords : data.SearchResponse.Web.Total,
+                        template : '{PreviousPageLink}{PageLinks}{NextPageLink}'
+                    });
+
+                    Ss.paginator.subscribe('changeRequest', Ss.handlePagination);
+
+                    // Render the Paginator into the configured container(s)
+                    Ss.paginator.render();
+                }
+
+                Ss.paginator.set("totalRecords", data.SearchResponse.Web.Total);
+
+                // show info
+                D.get("info").style.display = 'block';
+
+                // update indexes
+                D.get("startIndex").innerHTML = data.SearchResponse.Web.Offset + 1;
+                D.get("endIndex").innerHTML = data.SearchResponse.Web.Offset + (data.SearchResponse.Web.Total < ROWS_PER_PAGE ? data.SearchResponse.Web.Total : ROWS_PER_PAGE);
+                D.get("total").innerHTML = data.SearchResponse.Web.Total;
+
+                Ss.createResultset(data);
+            }
+        };
+
+        Ss.createResultset = function(data) {
+            var str = '<ul>';
+            var regEx = new RegExp(Ss.textToSearch, "gi");
+            for (var index = 0; index < data.SearchResponse.Web.Results.length; index++) {
+                var result = data.SearchResponse.Web.Results[index];
+                str += '<li><h3><a href="javascript:openTab(\'' + result.Url + '\')">' + result.Title.replace(regEx, '<em>$&</em>') + '</a></h3>';
+                str += '<div>';
+                str += result.Description.replace(regEx, '<em>$&</em>');
+                str += '<br><cite>';
+                str += result.DisplayUrl;
+                str += "</cite></div></li>"
+            }
+            str += '</ul>';
+
+            D.get('results').innerHTML = str;
+        };
+
+        function search() {
+            Ss.textToSearch = D.get('q').value;
+            if (Ss.textToSearch != null && Ss.textToSearch != "") {
+                if (Ss.isValid(Ss.selectedTabUrl)) {
+                    var url = SERVICE_URL + "&query=site:" + Ss.domainName + " " + Ss.textToSearch;
+                    YAHOO.util.Connect.asyncRequest('GET', url, Ss.callback);
+                }
+            }
+        }
+
+        function openTab(hrefUrl) {
+            chrome.tabs.update(Ss.selectedTabId, {url : hrefUrl});
+        }
+    </script>
+</head>
+<body class="yui-skin-sam" style="width: 500px;">
+<form action="" onsubmit="search();">
+    <input type="text" id="q" size="41" maxlength="1024">
+    <input type="button" onclick="search();" value="Search" id="searchBtn">
+    <br><span id="domainName" style="color: brown;"></span>&nbsp;
+</form>
+<div id="pageNum"></div>
+<div id="info" style="display:none;">Results <span id="startIndex" class="bold"></span> - <span id="endIndex"
+                                                                                                 class="bold"></span>
+    of about <span id="total" class="bold"></span></div>
+<div id="results"></div>
+</body>
+</html>
