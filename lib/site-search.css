@@ -1,0 +1,40 @@
+cite {
+    font-style: normal;
+    color: green;
+}
+
+h3 {
+    margin: 0;
+    font-weight: normal;
+    font-size: small;
+}
+
+li {
+    margin: 1em 0;
+    list-style: none;
+}
+
+ul {
+    padding-left: 0;
+}
+
+em {
+    font-weight: bold;
+    font-style: normal;
+}
+
+#q {
+    font-size: 17px;
+    vertical-align: middle;
+}
+
+#searchBtn {
+    margin: 0 2px 0 5px;
+    font-size: 15px;
+    height: 1.85em;
+    vertical-align: middle;
+}
+
+.bold {
+    font-weight: bold;
+}
