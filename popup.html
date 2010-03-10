@@ -16,6 +16,7 @@
         var HTTP = "http://";
         var HTTPS = "https://";
         var ROWS_PER_PAGE = 10;
+        var MAX_LENGTH = 1024;
         var SERVICE_URL = "http://api.search.live.net/json.aspx?Appid=719CF822A04CC49B98942128E67F6FFADA62645C&sources=web&web.count=10";
 
         // Set up the application under the YAHOO.sitesearch namespace
@@ -27,10 +28,21 @@
             return url.indexOf(HTTP) != -1 || url.indexOf(HTTPS) != -1;
         };
 
+        /**
+         * Callback which receives the selected text. Calls search().
+         * @param text The text to search for.
+         */
+        Ss.onSelection = function(text) {
+            D.setAttribute('q','value',text.substring(0,MAX_LENGTH));
+            search();
+        };                 
+
         chrome.tabs.getSelected(null, function(tab) {
             Ss.selectedTabUrl = tab.url;
             Ss.selectedTabId = tab.id;
             if (Ss.isValid(tab.url)) {
+                // look for selected text
+                chrome.extension.getBackgroundPage().getSelection(tab.id, Ss.onSelection);
                 var noProtocol = tab.url.replace(HTTP, "").replace(HTTPS, "");
                 Ss.domainName = noProtocol.substring(0, noProtocol.indexOf('/'));
                 D.get('domainName').innerHTML = Ss.domainName;
@@ -124,8 +136,8 @@
 </head>
 <body class="yui-skin-sam" style="width: 500px;">
 <form action="" onsubmit="search();">
-    <input type="text" id="q" size="41" maxlength="1024">
-    <input type="button" onclick="search();" value="Search" id="searchBtn">
+    <input type="text" id="q" size="41" maxlength="1024" />
+    <input type="button" onclick="search();" value="Search" id="searchBtn" />
     <br><span id="domainName" style="color: brown;"></span>&nbsp;
 </form>
 <div id="pageNum"></div>

@@ -1,0 +1,18 @@
+<html>
+<head>
+    <script type="text/javascript">
+        /**
+         * Send a request to the content script, to get the selected text. Use the callback to pass it back to browser action.
+         */
+        function getSelection(tabId, callback) {
+            chrome.tabs.sendRequest(tabId, {}, function(response) {
+                if (response.selectedText) {
+                    callback(response.selectedText);
+                }
+            });
+        }
+
+    </script>
+</head>
+<body></body>
+</html> 
