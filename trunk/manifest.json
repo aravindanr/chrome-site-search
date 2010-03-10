@@ -7,9 +7,16 @@
     "default_icon": "images/icon48.png",
     "popup": "popup.html"
   },
+  "background_page": "background.html",  
   "permissions": ["tabs","http://api.search.live.net/"],
   "icons": {
       "48" : "images/icon48.png",
       "128" : "images/icon128.png"
-  }
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*","https://*/*"],
+      "js": ["content_script.js"]
+    }
+  ]
 }
