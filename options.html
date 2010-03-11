@@ -1,0 +1,38 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Site Search Options</title>
+    <script type="text/javascript">
+        function store(element) {
+           localStorage[element.name] = element.value; 
+        }
+
+        function load_options() {
+            var provider = localStorage['provider'] || "bing";
+            var tab_select = localStorage['tab_select'] || "same_tab";
+
+            document.getElementById(provider).checked = true;
+            document.getElementById(tab_select).checked = true;
+        }
+    </script>
+</head>
+<body onload="load_options();">
+<table>
+    <tr>
+        <td>Search Provider: </td>
+        <td>
+            <input type="radio" name="provider" value="bing" id="bing" onclick="store(this);" />&nbsp; Bing<br>
+            <input type="radio" name="provider" value="yahoo" id="yahoo" onclick="store(this);" />&nbsp; Yahoo
+        </td>
+    </tr>
+    <tr>
+        <td>Open results in : </td>
+        <td>
+            <input type="radio" name="tab_select" value="same_tab" id="same_tab" onclick="store(this);" />&nbsp; Same Tab<br>
+            <input type="radio" name="tab_select" value="new_tab" id="new_tab" onclick="store(this);" />&nbsp; New Tab
+        </td>
+    </tr>
+</table>
+</body>
+</html>
