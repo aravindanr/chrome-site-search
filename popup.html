@@ -6,18 +6,14 @@
     <link rel="stylesheet" type="text/css" href="lib/fonts-min.css"/>
     <link rel="stylesheet" type="text/css" href="lib/paginator.css"/>
     <link href="lib/site-search.css" rel="stylesheet" type="text/css"/>
-
     <script type="text/javascript" src="lib/yahoo-dom-event.js"></script>
     <script type="text/javascript" src="lib/element-min.js"></script>
-    <script type="text/javascript" src="lib/paginator-min.js"></script>
-    <script type="text/javascript" src="lib/json-min.js"></script>
-    <script type="text/javascript" src="lib/connection-min.js"></script>
+    <script type="text/javascript" src="lib/paginator-min.js"></script>    
     <script type="text/javascript">
         var HTTP = "http://";
         var HTTPS = "https://";
         var ROWS_PER_PAGE = 10;
-        var MAX_LENGTH = 1024;
-        var tab_select = localStorage['tab_select'] || "same_tab";
+        var MAX_LENGTH = 1024;        
 
         // Set up the application under the YAHOO.sitesearch namespace
         var Ss = YAHOO.namespace('sitesearch');
@@ -57,11 +53,19 @@
                 textToSearch : Ss.textToSearch,
                 domainName : Ss.domainName,
                 start : state.recordOffset,
-                responseCallback : Ss.onSuccess
+                success : Ss.onSuccess,
+                failure : Ss.onFailure
             });
 
             // Update the Paginator's state, confirming change
             Ss.paginator.setState(state);
+        };
+
+        Ss.onFailure = function(response) {
+            D.get('results').innerHTML = '<br><strong>' + response.error + '</strong>';
+            Ss.paginator = null;
+            D.get('pageNum').innerHTML = '';
+            D.get('info').style.display = 'none';
         };
 
         Ss.onSuccess = function(response) {
@@ -125,14 +129,16 @@
                     chrome.extension.getBackgroundPage().search({
                         textToSearch : Ss.textToSearch,
                         domainName : Ss.domainName,
-                        start : null,
-                        responseCallback : Ss.onSuccess 
+                        start : 0,
+                        success : Ss.onSuccess,
+                        failure : Ss.onFailure
                     });
                 }
             }
         }
 
         function openTab(hrefUrl) {
+            var tab_select = localStorage['tab_select'] || "same_tab";
             if(tab_select == 'same_tab') {
                 chrome.tabs.update(Ss.selectedTabId, {url : hrefUrl});
             } else if(tab_select == 'new_tab') {
