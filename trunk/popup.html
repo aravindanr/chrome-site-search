@@ -17,7 +17,7 @@
         var HTTPS = "https://";
         var ROWS_PER_PAGE = 10;
         var MAX_LENGTH = 1024;
-        var SERVICE_URL = "http://api.search.live.net/json.aspx?Appid=719CF822A04CC49B98942128E67F6FFADA62645C&sources=web&web.count=10";
+        var tab_select = localStorage['tab_select'] || "same_tab";
 
         // Set up the application under the YAHOO.sitesearch namespace
         var Ss = YAHOO.namespace('sitesearch');
@@ -52,66 +52,65 @@
             }
         });
 
-        Ss.handlePagination = function (state) {            
-            var url = SERVICE_URL + "&web.offset=" + state.recordOffset + "&query=site:" + Ss.domainName + " " + Ss.textToSearch;
-
-            YAHOO.util.Connect.asyncRequest('GET', url, Ss.callback);
+        Ss.handlePagination = function (state) {                        
+            chrome.extension.getBackgroundPage().search({
+                textToSearch : Ss.textToSearch,
+                domainName : Ss.domainName,
+                start : state.recordOffset,
+                responseCallback : Ss.onSuccess
+            });
 
             // Update the Paginator's state, confirming change
             Ss.paginator.setState(state);
         };
 
-        Ss.callback = {
-            success : function(o) {
-                var data = YAHOO.lang.JSON.parse(o.responseText);
-                // handle empty resultset
-                if (!data.SearchResponse.Web.Total || data.SearchResponse.Web.Total == 0) {
-                    D.get('results').innerHTML = '<br><strong>Search produced no results</strong>';
-                    Ss.paginator = null;
-                    D.get('pageNum').innerHTML = '';
-                    D.get('info').style.display = 'none';
-                    return;
-                }
-
-                if (!Ss.paginator) {
-                    // Create the Paginator widget and subscribe to its changeRequest event                    
-                    Ss.paginator = new YAHOO.widget.Paginator({
-                        rowsPerPage : ROWS_PER_PAGE,
-                        containers : 'pageNum',
-                        totalRecords : data.SearchResponse.Web.Total,
-                        template : '{PreviousPageLink}{PageLinks}{NextPageLink}'
-                    });
-
-                    Ss.paginator.subscribe('changeRequest', Ss.handlePagination);
-
-                    // Render the Paginator into the configured container(s)
-                    Ss.paginator.render();
-                }
-
-                Ss.paginator.set("totalRecords", data.SearchResponse.Web.Total);
-
-                // show info
-                D.get("info").style.display = 'block';
-
-                // update indexes
-                D.get("startIndex").innerHTML = data.SearchResponse.Web.Offset + 1;
-                D.get("endIndex").innerHTML = data.SearchResponse.Web.Offset + (data.SearchResponse.Web.Total < ROWS_PER_PAGE ? data.SearchResponse.Web.Total : ROWS_PER_PAGE);
-                D.get("total").innerHTML = data.SearchResponse.Web.Total;
-
-                Ss.createResultset(data);
+        Ss.onSuccess = function(response) {
+            if (!response.total || response.total == 0) {
+                D.get('results').innerHTML = '<br><strong>Search produced no results</strong>';
+                Ss.paginator = null;
+                D.get('pageNum').innerHTML = '';
+                D.get('info').style.display = 'none';
+                return;
             }
+
+            if (!Ss.paginator) {
+                // Create the Paginator widget and subscribe to its changeRequest event
+                Ss.paginator = new YAHOO.widget.Paginator({
+                    rowsPerPage : ROWS_PER_PAGE,
+                    containers : 'pageNum',
+                    totalRecords : response.total,
+                    template : '{PreviousPageLink}{PageLinks}{NextPageLink}'
+                });
+
+                Ss.paginator.subscribe('changeRequest', Ss.handlePagination);
+
+                // Render the Paginator into the configured container(s)
+                Ss.paginator.render();
+            }
+
+            Ss.paginator.set("totalRecords", response.total);
+
+            // show info
+            D.get("info").style.display = 'block';
+
+            // update indexes
+            D.get("startIndex").innerHTML = response.start + 1;
+            D.get("endIndex").innerHTML = response.start + (response.total < ROWS_PER_PAGE ? response.total : ROWS_PER_PAGE);
+            D.get("total").innerHTML = response.total;
+
+            Ss.createResultset(response);
         };
 
         Ss.createResultset = function(data) {
             var str = '<ul>';
             var regEx = new RegExp(Ss.textToSearch, "gi");
-            for (var index = 0; index < data.SearchResponse.Web.Results.length; index++) {
-                var result = data.SearchResponse.Web.Results[index];
-                str += '<li><h3><a href="javascript:openTab(\'' + result.Url + '\')">' + result.Title.replace(regEx, '<em>$&</em>') + '</a></h3>';
+            for (var index = 0; index < data.results.length; index++) {
+                var result = data.results[index];
+                str += '<li><h3><a href="javascript:openTab(\'' + result.url + '\')">' + result.title.replace(regEx, '<em>$&</em>') + '</a></h3>';
                 str += '<div>';
-                str += result.Description.replace(regEx, '<em>$&</em>');
+                str += result.description.replace(regEx, '<em>$&</em>');
                 str += '<br><cite>';
-                str += result.DisplayUrl;
+                str += result.displayUrl;
                 str += "</cite></div></li>"
             }
             str += '</ul>';
@@ -123,14 +122,22 @@
             Ss.textToSearch = D.get('q').value;
             if (Ss.textToSearch != null && Ss.textToSearch != "") {
                 if (Ss.isValid(Ss.selectedTabUrl)) {
-                    var url = SERVICE_URL + "&query=site:" + Ss.domainName + " " + Ss.textToSearch;
-                    YAHOO.util.Connect.asyncRequest('GET', url, Ss.callback);
+                    chrome.extension.getBackgroundPage().search({
+                        textToSearch : Ss.textToSearch,
+                        domainName : Ss.domainName,
+                        start : null,
+                        responseCallback : Ss.onSuccess 
+                    });
                 }
             }
         }
 
         function openTab(hrefUrl) {
-            chrome.tabs.update(Ss.selectedTabId, {url : hrefUrl});
+            if(tab_select == 'same_tab') {
+                chrome.tabs.update(Ss.selectedTabId, {url : hrefUrl});
+            } else if(tab_select == 'new_tab') {
+                chrome.tabs.create({url : hrefUrl})
+            }
         }
     </script>
 </head>

@@ -1,6 +1,13 @@
 <html>
 <head>
+    <script type="text/javascript" src="lib/yahoo-dom-event.js"></script>
+    <script type="text/javascript" src="lib/element-min.js"></script>
+    <script type="text/javascript" src="lib/paginator-min.js"></script>
+    <script type="text/javascript" src="lib/json-min.js"></script>
+    <script type="text/javascript" src="lib/connection-min.js"></script>
     <script type="text/javascript">
+        var BING_SERVICE_URL = "http://api.search.live.net/json.aspx?Appid=719CF822A04CC49B98942128E67F6FFADA62645C&sources=web&web.count=10";        
+        var YAHOO_SERVICE_URL = "http://boss.yahooapis.com/ysearch/web/v1/{query}?appid=tXtSG3_V34FrTbs0sAEIfkWDNI7bjH2oW6YvMlG4uNDJpjOH5ykV22zLsG4syfY-&format=json&style=raw&sites={site}";
         /**
          * Send a request to the content script, to get the selected text. Use the callback to pass it back to browser action.
          */
@@ -10,6 +17,78 @@
                     callback(response.selectedText);
                 }
             });
+        }
+
+        bingCallback = {
+            success : function(o) {
+                var data = YAHOO.lang.JSON.parse(o.responseText);
+                var response = {};
+
+                response['total'] = data.SearchResponse.Web.Total;
+                response['start'] = data.SearchResponse.Web.Offset;
+                response['results'] = [];
+
+                if (data.SearchResponse.Web.Results) {
+                    for (var index = 0; index < data.SearchResponse.Web.Results.length; index++) {
+                        var result = {};
+                        result['url'] = data.SearchResponse.Web.Results[index].Url;
+                        result['title'] = data.SearchResponse.Web.Results[index].Title;
+                        result['description'] = data.SearchResponse.Web.Results[index].Description;
+                        result['displayUrl'] = data.SearchResponse.Web.Results[index].DisplayUrl;
+                        response.results.push(result);
+                    }
+                }
+
+                // call the popup page
+                this.responseCallback(response);
+            }
+        };
+
+        yahooCallback = {
+            success : function(o) {
+                var data = YAHOO.lang.JSON.parse(o.responseText);
+                var response = {};
+
+                response['total'] = data.ysearchresponse.totalhits;
+                response['start'] = data.ysearchresponse.start;
+                response['results'] = [];
+
+                if (data.ysearchresponse.resultset_web) {
+                    for (var index = 0; index < data.ysearchresponse.resultset_web.length; index++) {
+                        var result = {};
+                        result['url'] = data.ysearchresponse.resultset_web[index].url;
+                        result['title'] = data.ysearchresponse.resultset_web[index].title;
+                        result['description'] = data.ysearchresponse.resultset_web[index].abstract;
+                        result['displayUrl'] = data.ysearchresponse.resultset_web[index].dispurl;
+                        response.results.push(result);
+                    }
+                }
+
+                // call the popup page
+                this.responseCallback(response);
+            }
+        };
+
+        function search(request) {
+            var url, xhrCallback;
+            var provider = localStorage['provider'] || 'bing';
+            if(provider == 'bing') {
+                url = BING_SERVICE_URL + "&query=site:" + request.domainName + " " + request.textToSearch;
+                if (request.start) {
+                    url += "&web.offset=" + request.start;
+                }
+                xhrCallback = bingCallback;
+            }
+            else if(provider == 'yahoo') {
+                url = YAHOO_SERVICE_URL.replace('{site}',request.domainName).replace('{query}',request.textToSearch);
+                if(request.start) {
+                    url += "&start=" + request.start;
+                }
+
+                xhrCallback = yahooCallback;
+            }
+            xhrCallback['responseCallback'] = request.responseCallback;
+            YAHOO.util.Connect.asyncRequest('GET', url, xhrCallback);
         }
 
     </script>
