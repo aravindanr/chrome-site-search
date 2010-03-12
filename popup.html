@@ -139,13 +139,19 @@
             Ss.textToSearch = D.get('q').value;
             if (Ss.textToSearch != null && Ss.textToSearch != "") {
                 if (Ss.isValid(Ss.selectedTabUrl)) {
-                    chrome.extension.getBackgroundPage().search({
-                        textToSearch : Ss.textToSearch,
-                        domainName : Ss.domainName,
-                        start : 0,
-                        success : Ss.onSuccess,
-                        failure : Ss.onFailure
-                    });
+                    if(localStorage['provider'] == 'google') {
+                        openTab("http://www.google.com/search?q=site:" + Ss.domainName + " " + Ss.textToSearch);
+                        // close the popup
+                        window.close();
+                    } else {
+                        chrome.extension.getBackgroundPage().search({
+                            textToSearch : Ss.textToSearch,
+                            domainName : Ss.domainName,
+                            start : 0,
+                            success : Ss.onSuccess,
+                            failure : Ss.onFailure
+                        });
+                    }
                 }
             }
         }

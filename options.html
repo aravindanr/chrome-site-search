@@ -28,24 +28,49 @@
             document.getElementById(provider).checked = true;
             document.getElementById(tab_select).checked = true;
         }
-    </script>
+    </script>     
 </head>
 <body onload="load_options();">
 <table>
+    <tbody>
+        <tr>
+            <td>
+                <img src="images/icon48.png" alt="Site Search">
+            </td>
+            <td>&nbsp;</td>
+            <td>
+                <h2>Site Search Options</h2>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<br>
+<br>
+<table>
+    <tfoot>
+        <tr>
+            <td colspan="3"><h3>Options are saved automatically.</h3></td>
+        </tr>
+    </tfoot>
+    <tbody>
     <tr>
-        <td>Search Provider:</td>
+        <td><h3>Search Provider:</h3></td>
+        <td>&nbsp;</td>
         <td>
             <input type="radio" name="provider" value="bing" id="bing" onclick="store(this);"/>&nbsp; Bing<br>
-            <input type="radio" name="provider" value="yahoo" id="yahoo" onclick="store(this);"/>&nbsp; Yahoo
+            <input type="radio" name="provider" value="google" id="google" onclick="store(this);"/>&nbsp; Google<br>
+            <input type="radio" name="provider" value="yahoo" id="yahoo" onclick="store(this);"/>&nbsp; Yahoo<br>            
         </td>
     </tr>
     <tr>
-        <td>Open results in :</td>
+        <td><h3>Open results in :</h3></td>
+        <td>&nbsp;</td>
         <td>
             <input type="radio" name="tab_select" value="same_tab" id="same_tab" onclick="store(this);"/>&nbsp; Same Tab<br>
             <input type="radio" name="tab_select" value="new_tab" id="new_tab" onclick="store(this);"/>&nbsp; New Tab
         </td>
     </tr>
+    </tbody>
 </table>
 </body>
 </html>
